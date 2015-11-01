@@ -15,38 +15,58 @@ function ClientCertStrategy(options, verify) {
   this.name = 'client-cert';
   this._verify = verify;
   this._passReqToCallback = options.passReqToCallback;
+  this._renegotiation = options.renegotiation;
 }
 
 util.inherits(ClientCertStrategy, Strategy);
 
 ClientCertStrategy.prototype.authenticate = function(req, options) {
-  var that = this;
+  var self = this;
 
+  if (self._renegotiation) {
+    req.connection.renegotiate({
+      requestCert: true,
+      rejectUnauthorized: true
+    }, function(err) {
+      if (err) {
+        self.fail();
+        return;
+      }
+
+      continueVerify(req, self);
+    });
+
+  } else {
+    continueVerify(req, self);
+  }
+};
+
+function continueVerify(req, self) {
   // Requests must be authorized
   // (i.e. the certificate must be signed by at least one trusted CA)
   if(!req.client.authorized) {
-    that.fail();
+    self.fail();
   } else {
     var clientCert = req.connection.getPeerCertificate();
 
     // The cert must exist and be non-empty
     if(!clientCert || Object.getOwnPropertyNames(clientCert).length === 0) {
-      that.fail();
+      self.fail();
     } else {
 
       var verified = function verified(err, user) {
-        if (err) { return that.error(err); }
-        if (!user) { return that.fail(); }
-        that.success(user);
+        if (err) { return self.error(err); }
+        if (!user) { return self.fail(); }
+        self.success(user);
       };
 
-      if (this._passReqToCallback) {
-        this._verify(req, clientCert, verified);
+      if (self._passReqToCallback) {
+        self._verify(req, clientCert, verified);
       } else {
-        this._verify(clientCert, verified);
+        self._verify(clientCert, verified);
       }
     }
   }
-};
+}
 
 exports.Strategy = ClientCertStrategy;
