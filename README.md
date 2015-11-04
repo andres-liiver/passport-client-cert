@@ -12,6 +12,7 @@ The strategy constructor requires a verify callback, which will be executed on e
 ### Options
 
 * `passReqToCallback` - optional. Causes the request object to be supplied to the verify callback as the first parameter.
+* `renegotiation` - optional. Performs TLS renegotiation and asks client for certificate.
 
 The verify callback is passed with the [client certificate object](https://nodejs.org/api/tls.html#tls_tlssocket_getpeercertificate_detailed) and a `done` callback. The `done` callback must be called as per the [passport.js documentation](http://passportjs.org/guide/configure/).
 
