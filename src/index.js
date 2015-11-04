@@ -16,6 +16,9 @@ function ClientCertStrategy(options, verify) {
   this._verify = verify;
   this._passReqToCallback = options.passReqToCallback;
   this._renegotiation = options.renegotiation;
+  this._successReturnToOrRedirect = options.successReturnToOrRedirect;
+  this._successRedirect = options.successRedirect;
+  this._failureRedirect = options.failureRedirect;
 }
 
 util.inherits(ClientCertStrategy, Strategy);
@@ -23,14 +26,25 @@ util.inherits(ClientCertStrategy, Strategy);
 ClientCertStrategy.prototype.authenticate = function(req, options) {
   var self = this;
 
+  if (self._successReturnToOrRedirect) {
+    options.successReturnToOrRedirect = self._successReturnToOrRedirect;
+  }
+
+  if (self._successRedirect) {
+    options.successRedirect = self._successRedirect;
+  }
+
+  if (self._failureRedirect) {
+    options.failureRedirect = self._failureRedirect;
+  }
+
   if (self._renegotiation) {
     req.connection.renegotiate({
       requestCert: true,
-      rejectUnauthorized: true
+      rejectUnauthorized: false
     }, function(err) {
       if (err) {
-        self.fail();
-        return;
+        return self.fail();
       }
 
       continueVerify(req, self);
@@ -45,27 +59,26 @@ function continueVerify(req, self) {
   // Requests must be authorized
   // (i.e. the certificate must be signed by at least one trusted CA)
   if(!req.client.authorized) {
-    self.fail();
+    return self.fail();
+  }
+
+  var clientCert = req.connection.getPeerCertificate();
+
+  // The cert must exist and be non-empty
+  if(!clientCert || Object.getOwnPropertyNames(clientCert).length === 0) {
+    return self.fail();
+  }
+
+  var verified = function verified(err, user) {
+    if (err) { return self.error(err); }
+    if (!user) { return self.fail(); }
+    self.success(user);
+  };
+
+  if (self._passReqToCallback) {
+    self._verify(req, clientCert, verified);
   } else {
-    var clientCert = req.connection.getPeerCertificate();
-
-    // The cert must exist and be non-empty
-    if(!clientCert || Object.getOwnPropertyNames(clientCert).length === 0) {
-      self.fail();
-    } else {
-
-      var verified = function verified(err, user) {
-        if (err) { return self.error(err); }
-        if (!user) { return self.fail(); }
-        self.success(user);
-      };
-
-      if (self._passReqToCallback) {
-        self._verify(req, clientCert, verified);
-      } else {
-        self._verify(clientCert, verified);
-      }
-    }
+    self._verify(clientCert, verified);
   }
 }
 
