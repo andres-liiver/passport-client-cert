@@ -66,7 +66,7 @@ function continueVerify(req, self) {
   if (req.connection.getPeerCertificate) {
     var clientCert = req.connection.getPeerCertificate();
   } else {
-    var clientCert = x509.parseCert(formatCert(req.headers.ssl_client_cert);
+    var clientCert = x509.parseCert(formatCert(req.headers.ssl_client_cert));
   }
 
   // The cert must exist and be non-empty
