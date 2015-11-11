@@ -66,7 +66,7 @@ function continueVerify(req, self) {
   if (req.connection.getPeerCertificate) {
     var clientCert = req.connection.getPeerCertificate();
   } else {
-    var clientCert = x509.parseCert(req.headers.ssl_client_cert);
+    var clientCert = x509.parseCert(formatCert(req.headers.ssl_client_cert);
   }
 
   // The cert must exist and be non-empty
@@ -85,6 +85,16 @@ function continueVerify(req, self) {
   } else {
     self._verify(clientCert, verified);
   }
+}
+
+function formatCert(cert) {
+  var s = cert.split(' ');
+  var beginCert = s[0] + ' ' + s[1] + '\n';
+  var endCert = s[s.length-2] + ' ' + s[s.length-1];
+  s.splice(0, 2);
+  s.splice(s.length-2, s.length);
+  var formattedCert = beginCert + s.join('\n') + ' ' + endCert;
+  return formattedCert;
 }
 
 exports.Strategy = ClientCertStrategy;
