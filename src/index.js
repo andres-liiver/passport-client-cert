@@ -1,5 +1,6 @@
 var util = require('util'),
-    Strategy = require('passport-strategy');
+    Strategy = require('passport-strategy'),
+    x509 = require('x509');
 
 /*
  * passport.js TLS client certificate strategy
@@ -58,14 +59,18 @@ ClientCertStrategy.prototype.authenticate = function(req, options) {
 function continueVerify(req, self) {
   // Requests must be authorized
   // (i.e. the certificate must be signed by at least one trusted CA)
-  if(!req.client.authorized) {
+  if (!req.client.authorized && req.headers.ssl_client_cert == '(null)') {
     return self.fail();
   }
 
-  var clientCert = req.connection.getPeerCertificate();
+  if (req.connection.getPeerCertificate) {
+    var clientCert = req.connection.getPeerCertificate();
+  } else {
+    var clientCert = x509.parseCert(req.headers.ssl_client_cert);
+  }
 
   // The cert must exist and be non-empty
-  if(!clientCert || Object.getOwnPropertyNames(clientCert).length === 0) {
+  if (!clientCert || Object.getOwnPropertyNames(clientCert).length === 0) {
     return self.fail();
   }
 

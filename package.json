@@ -26,7 +26,8 @@
   },
   "homepage": "https://github.com/ripjar/passport-client-cert",
   "dependencies": {
-    "passport-strategy": "^1.0.0"
+    "passport-strategy": "^1.0.0",
+    "x509": "^0.2.3"
   },
   "devDependencies": {
     "chai": "^3.3.0",
